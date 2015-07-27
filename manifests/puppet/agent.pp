@@ -28,7 +28,6 @@ class profiles::puppet::agent {
   }
 
   class { '::puppet':
-    version                     => $config[version],
     server                      => false,
     server_git_repo             => $config[server_git_repo],
     runmode                     => $config[runmode],
