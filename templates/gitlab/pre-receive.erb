@@ -1,0 +1,69 @@
+#!/bin/bash
+
+COMMAND='puppet parser validate'
+LINT_COMMAND='puppet-lint --no-80chars-check --no-autoloader_layout-check --with-filename --fail-on-warnings'
+TEMPDIR=`mktemp -d`
+export HOME='/var/opt/gitlab'
+
+echo "### Attempting to validate puppet files... ####"
+
+# See https://www.kernel.org/pub/software/scm/git/docs/githooks.html#pre-receive
+oldrev=$1
+newrev=$2
+refname=$3
+
+while read oldrev newrev refname; do
+
+    # Get the file names, without directory, of the files that have been modified
+    # between the new revision and the old revision
+    files=`git diff --name-only ${oldrev} ${newrev}`
+
+    # Get a list of all objects in the new revision
+    objects=`git ls-tree --full-name -r ${newrev}`
+
+    # Iterate over each of these files
+    for file in ${files}; do
+
+        # Search for the file name in the list of all objects
+        object=`echo -e "${objects}" | egrep "(\s)${file}\$" | awk '{ print $3 }'`
+
+        # If it's not present, then continue to the the next itteration
+        if [ -z ${object} ];
+	then
+	    continue;
+	fi
+
+        # Otherwise, create all the necessary sub directories in the new temp directory
+        mkdir -p "${TEMPDIR}/`dirname ${file}`" &>/dev/null
+        # and output the object content into it's original file name
+	git cat-file blob ${object} > ${TEMPDIR}/${file}
+
+    done;
+done
+
+# Now loop over each file in the temp dir to parse them for valid syntax and style
+files_found=`find ${TEMPDIR} -name '*.pp'`
+for fname in ${files_found}; do
+    echo "Running puppet parser validate on ${fname}"
+    ${COMMAND} ${fname}
+    if [[ $? -ne 0 ]];
+    then
+	  echo "ERROR: parser failed on ${fname}"
+          bad_file=1
+    fi
+
+    echo "Running puppet-lint checks on ${fname}"
+    ${LINT_COMMAND} ${fname}
+    if [[ $? -ne 0 ]];
+    then
+        echo "ERROR: puppet-lint failed on ${fname}"
+        bad_file=1
+    fi
+done;
+
+rm -rf ${TEMPDIR} &> /dev/null
+
+if [[ $bad_file -eq 1 ]]
+then
+  exit 1
+fi

@@ -1,0 +1,11 @@
+language: ruby
+rvm:
+  - 2.0.0
+notifications:
+  email:
+    - your@email.com
+
+env:
+  - PUPPET_VERSION=3.8.1
+
+#after_success: "curl -u 'deploy:yourpassword' -m 120 yourhost.yourdomain.tld:9292/deploy/module/profiles"

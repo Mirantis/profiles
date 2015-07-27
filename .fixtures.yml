@@ -1,0 +1,6 @@
+fixtures:
+  repositories:
+    stdlib: https://github.com/puppetlabs/puppetlabs-stdlib.git
+    profiles: https://github.com/mirantis/profiles.git
+  symlinks:
+    profiles: "#{source_dir}"

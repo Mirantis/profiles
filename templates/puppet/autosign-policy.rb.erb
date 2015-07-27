@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+### This file is managed by Puppet ###
+
+# This is the policy-based autosign executable
+# Each host must have a csr_attributes.yaml file containing
+# the proper oid and matching key to use prior to generating
+# the ssl cert for that host.  The csr with the custom attributes
+# are then passed to this executable and checked. If the correct oid
+# and key are present, the certificate will be autosigned.
+
+require "openssl"
+include OpenSSL
+
+# Grab the cert that's passed in via stdin
+csr = OpenSSL::X509::Request.new $stdin.read
+
+# Get a list of custom attributes
+atts = csr.attributes()
+
+# If there aren't any custom csr attributes, don't sign
+if atts.empty?
+  exit 1
+end
+
+key = nil
+
+# Spin through attributes and find our custom attribute to check against
+atts.each do |a|
+  if (a.oid=="extReq")
+    val = a.value.value.first.value.first.value
+    if val[0].value == "<%= @autosign_oid %>"
+      key = val[1].value
+    end
+  end
+end
+
+# If the key for the attribute matches, sign
+# Otherwise, exit 1 and don't sign
+if key == "<%= @autosign_key %>"
+  print "Match\n"
+  exit 0
+else
+  print "No match\n"
+  exit 1
+end

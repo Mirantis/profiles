@@ -1,0 +1,8 @@
+### This file is managed by Puppet ###
+
+# This is a yaml file for specifying custom CSR extensions for policy-based auto signing
+<% if @autosign_oid and !@autosign_oid.empty? and @autosign_key and !@autosign_key.empty? -%>
+---
+extension_requests:
+  <%= @autosign_oid %>: "<%= @autosign_key %>"
+<% end -%>
