@@ -13,4 +13,7 @@ class profiles::common::sudo {
   contain ::sudo
   contain ::sudo::configs
 
+  Class['::sudo'] ->
+  Class['::sudo::configs']
+
 }
